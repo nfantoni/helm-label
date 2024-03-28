@@ -1,0 +1,11 @@
+name: "label"
+version: "0.1.0"
+usage: "helm label list [RELEASE NAME]]"
+description: "Manage label of Helm release"
+ignoreFlags: false
+command: "$HELM_PLUGIN_DIR/script.sh"
+platformCommand:
+  - os: "linux"
+    command: "$HELM_PLUGIN_DIR/script.sh"
+  - os: "windows"
+    command: "$HELM_PLUGIN_DIR/script.bat"
