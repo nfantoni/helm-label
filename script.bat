@@ -47,9 +47,9 @@ REM Altro codice qui...
 goto :eof
 
 :list
-REM Funzione list
+REM List function
 set RELEASE_NAME=%1
-REM Esegui helm list per ottenere le informazioni sulla release
+REM Get the revision information with helm list
 for /f "delims=" %%a in ('helm list --filter %RELEASE_NAME% -o yaml 2^>nul') do (
     set HELM_LIST=%%a
 )
@@ -58,7 +58,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Analizza l'output YAML per ottenere il numero di revisione
+REM Get the revision number from the yaml output
 for /f "tokens=2" %%b in ('echo %HELM_LIST% ^| findstr /c:"revision:"') do (
     set REVISION=%%b
 )
@@ -67,13 +67,13 @@ if "%REVISION%" == "" (
     exit /b 1
 )
 
-REM Esegui kubectl per ottenere le informazioni sul secret
+REM Exec kubectl on secret associated to retrive the label information
 for /f "delims=" %%c in ('kubectl get secret -l "owner=helm,name=%RELEASE_NAME%,version=%REVISION%" -o=jsonpath="{.items[*].metadata.labels}"') do (
     set LABEL=%%c
 )
 set LABEL=%LABEL:~1,-1%
 
-REM Stampa le label
+REM Print lables
 echo %LABEL%
 if errorlevel 1 (
     echo Error running kubectl command
