@@ -1,24 +1,55 @@
 @echo off
 setlocal
 
+REM Funzione di utilizzo
 :usage
-echo Usage: helm_label.bat ^<release-name^>
-echo.
-echo Options:
-echo   ^<release-name^>  Name of the Helm release
-echo.
 echo Description:
-echo   This script retrieves the labels associated with the Helm release.
+echo   This plugin retrieves the labels associated with the Helm release.
+echo.
+echo Usage: helm label [command] ^<release-name^>
+echo.
+echo Available Commands:
+echo   list    return the list of lables associated at the release in json format
+echo.
+echo Params:
+echo   ^<release-name^>    Name of the Helm release
+echo.
+echo Flags:
+echo   -h, --help  help for the helm plugin
 echo.
 goto :eof
 
+:main
+REM Verifica se è stata fornita l'opzione -h o --help
+if "%~1" == "-h" goto :usage
+if "%~1" == "--help" goto :usage
+
+REM Verifica se l'elenco degli argomenti è corretto
 if "%~1" == "" (
+    echo Error: Missing argument.
+    goto :usage
+)
+if "%~2" == "" (
+    echo Error: Missing argument.
     goto :usage
 )
 
-set RELEASE_NAME=%1
+set ACTION=%1
 
-rem Esegui helm list per ottenere le informazioni sulla release
+REM Verifica se $1 è "list"
+if "%ACTION%" == "list" (
+    call :list "%2"
+    exit /b
+)
+
+REM Altro codice qui...
+
+goto :eof
+
+:list
+REM Funzione list
+set RELEASE_NAME=%1
+REM Esegui helm list per ottenere le informazioni sulla release
 for /f "delims=" %%a in ('helm list --filter %RELEASE_NAME% -o yaml 2^>nul') do (
     set HELM_LIST=%%a
 )
@@ -27,7 +58,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem Analizza l'output YAML per ottenere il numero di revisione
+REM Analizza l'output YAML per ottenere il numero di revisione
 for /f "tokens=2" %%b in ('echo %HELM_LIST% ^| findstr /c:"revision:"') do (
     set REVISION=%%b
 )
@@ -36,22 +67,17 @@ if "%REVISION%" == "" (
     exit /b 1
 )
 
-rem Esegui kubectl per ottenere le informazioni sul secret
+REM Esegui kubectl per ottenere le informazioni sul secret
 for /f "delims=" %%c in ('kubectl get secret -l "owner=helm,name=%RELEASE_NAME%,version=%REVISION%" -o=jsonpath="{.items[*].metadata.labels}"') do (
     set LABEL=%%c
 )
 set LABEL=%LABEL:~1,-1%
 
-rem Divide la stringa in un array
-for %%d in (%LABEL%) do (
-    for /f "tokens=1,2 delims=:" %%e in ("%%d") do (
-        echo %%e=%%f
-    )
-)
-
+REM Stampa le label
+echo %LABEL%
 if errorlevel 1 (
     echo Error running kubectl command
     exit /b 1
 )
 
-:eof
+goto :eof
